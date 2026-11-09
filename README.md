@@ -1,25 +1,76 @@
-# 灵动岛 Dynamic Island（开发预览）
+# 灵动岛 · Dynamic Island
 
-目标：Minecraft Java 26.3 / Fabric Loader 0.19.5+ / Fabric API 26.3 / Java 25。
+为 Minecraft Fabric 添加一个灵动岛风格的 HUD，将本地时间、战斗目标生命值和网易云音乐播放信息放在屏幕上的圆角胶囊中。
 
-**交付状态：已使用 OpenJDK 25、Gradle 9.6.0、Loom 1.17.21 完成编译，生成 `build/libs/dynamic-island-0.1.0.jar`。已核对包内元数据、入口及嵌入依赖；尚未进入游戏验证界面、战斗同步和网易云登录播放。源码 ZIP 不能直接放进 mods。**
+[下载版本](https://github.com/tourio114/psychic-enigma/releases) · [更新日志](CHANGELOG.md) · [反馈问题](https://github.com/tourio114/psychic-enigma/issues) · [MIT 许可证](LICENSE)
 
-## 功能代码
+> **v0.1.0 为开发预览版。** 已通过本地编译与 GitHub Actions 构建，尚未完成游戏内实测；界面、战斗血量同步与网易云登录播放仍需实际验证。
 
-- 顶部黑色圆角胶囊，默认显示电脑本地时间，可开关秒数。
-- 战斗时展开，显示攻击目标名称、服务端同步生命值和血条；5 秒后收起。
-- 默认右 Shift 打开配置；“修改快捷键”进入 Minecraft 原生按键设置。
-- “拖动设置位置”调整位置，保存相对屏幕坐标，自动限制在屏幕内。
-- 网易云歌曲搜索、点击播放、暂停/继续、停止、音量调整，播放时显示歌名。
-- 网易云 App 扫码登录，轮询确认、二维码过期处理、退出并清除本地凭证。
-- 获取音乐地址时携带登录 cookie，使用账号已有权限。无播放地址、登录失效和仅有试听地址会提示。仅支持 API 返回的 MP3 音频；其他编码会显示播放失败。
-- HTTP 请求与音频解码运行在后台线程；关闭游戏清理线程和音频资源。
+## 运行要求
 
-## 构建
+| 组件 | 版本 |
+| --- | --- |
+| Minecraft Java 版 | 26.3 |
+| Fabric Loader | 0.19.5 或更高 |
+| Fabric API | 与 Minecraft 26.3 对应的版本 |
+| Java | 25 或更高 |
 
-安装 **JDK 25 或更高版本**、Python 3，并确保能访问 Fabric Maven、Maven Central、Mojang 下载服务器和 Gradle 下载站。
+## 安装
 
-Windows：双击 `build.bat`。也可在工程目录执行：
+1. 安装 Minecraft 26.3 的 Fabric Loader。
+2. 在 [Releases](https://github.com/tourio114/psychic-enigma/releases/tag/v0.1.0) 下载 `dynamic-island-0.1.0.jar`。
+3. 将模组 JAR 和对应版本的 Fabric API 放入游戏目录的 `mods` 文件夹。
+4. 启动游戏，进入世界，按 **右 Shift** 打开设置。
+
+不要将源码 ZIP、`-sources.jar` 或第三方库源码包放进 `mods`。
+
+## 功能与操作
+
+| 功能 | 说明 |
+| --- | --- |
+| 时钟 | 默认显示电脑本地时间，可切换是否显示秒数 |
+| 灵动岛动画 | 空闲时收起；战斗或播放音乐时平滑展开 |
+| 自定义位置 | 设置中选择“拖动设置位置”，用鼠标拖动，完成后保存 |
+| 可修改快捷键 | 默认右 Shift；点击“修改快捷键”进入原生按键设置 |
+| 战斗面板 | 显示最近攻击目标的名称、生命值和血条，约 5 秒后收起 |
+| 网易云音乐 | 搜索歌曲、点击播放、暂停/继续、停止、调整音量 |
+| 登录 | 网易云 App 扫码确认，保存凭证；支持退出并清除本地凭证 |
+
+### 联机生命值
+
+准确生命值需要服务端同步。单人游戏使用内置服务器；多人游戏需要服务器也安装本模组和 Fabric API。
+
+如果只有客户端安装，时钟与音乐仍可使用，战斗面板会显示“血量未同步”。
+
+## 网易云音乐配置
+
+音乐功能依赖单独部署的 [TH911/NeteaseCloudMusicApi](https://github.com/TH911/NeteaseCloudMusicApi)。模组内不包含 API 服务，GitHub 仓库地址也不能直接作为 API 地址。
+
+按上游说明部署服务后：
+
+1. 右 Shift 打开设置，填写 API 地址并保存。本机部署默认可用 `http://localhost:3000`，远端部署填写实际的 HTTPS 服务地址。
+2. 点击“扫码登录”，使用网易云音乐手机 App 扫码并确认。
+3. 进入“音乐播放器”，输入关键词搜索，点击歌曲播放。
+4. 登录失效后重新扫码；点击“退出登录”可删除本地凭证并停止播放。
+
+`localhost` 指运行 Minecraft 的电脑。二维码等待上限为 150 秒，可点击关闭或按 Esc 取消。
+
+**VIP 歌曲需要登录账号具备相应权限。** 登录不会绕过 VIP、版权或地区限制。接口只返回试听地址时会提示确认权限；当前播放器仅支持 MP3。音乐音量由模组内按钮控制，不跟随游戏的音乐音量设置。
+
+### 配置文件
+
+| 文件 | 内容 |
+| --- | --- |
+| `config/dynamicisland.json` | 位置、时间显示、API 地址、音量 |
+| `config/dynamicisland.session` | 与 API 地址绑定的网易云登录凭证 |
+
+登录凭证以本地明文保存，不要上传或分享该文件。请使用自己信任的 API 服务；更换 API 地址不会将旧地址的凭证发送到新地址。退出仅清除本模组的本地登录状态。
+
+## 从源码构建
+
+需要 JDK 25+、Python 3，以及可访问 Gradle、Fabric Maven、Maven Central 和 Mojang 下载服务的网络。
+
+Windows：双击 `build.bat`，或执行：
 
 ```powershell
 py -3 tools/build.py
@@ -31,66 +82,37 @@ Linux / macOS：
 ./build.sh
 ```
 
-脚本从 Gradle 官方下载 9.6.0，核对官方 SHA-256 后运行构建。如果已经安装 Gradle 9.6.0，可直接运行 `gradle build`。Loom 固定为已成功构建的 1.17.21；版本依赖见 build.gradle。
+脚本会下载 Gradle 9.6.0 并核对官方 SHA-256，再运行构建。已安装对应 Gradle 时也可执行 `gradle build`。Loom 固定为 1.17.21。
 
-成功后取 `build/libs/dynamic-island-0.1.0.jar`，不要取 `-sources.jar`。
+安装包输出位置：`build/libs/dynamic-island-0.1.0.jar`。
 
-也提供 `.github/workflows/build.yml`：把工程放进你自己的 GitHub 仓库后，在 Actions 手动运行并下载构建产物。此会话没有创建仓库、上传代码或运行远程构建。
+仓库包含 [GitHub Actions 工作流](.github/workflows/build.yml)，可手动构建或在源码变更后自动构建，成功后从对应任务的 Artifacts 下载。仓库的 `releases/` 目录也保留构建文件与 SHA-256 校验值。
 
-已构建的开发预览 JAR 也保存在 `releases/dynamic-island-0.1.0.jar`，校验值见 `releases/SHA256SUMS`。
+## 测试状态与反馈
 
-## 安装与生命值同步
+已通过 Java 编译、GitHub Actions 构建，以及包内入口、元数据、语言资源和嵌入依赖检查。**构建成功不代表已通过游戏测试。**
 
-客户端安装 Fabric Loader，将本模组和对应 26.3 的 Fabric API 放入游戏目录 `mods/`。进入世界后按右 Shift。
+仍待验证：不同分辨率下的界面与拖动、改键、单人及联机血量同步、扫码登录、VIP 权限、音频设备与异常网络下的播放行为。
 
-准确血量由服务端提供：单人游戏使用内置服务器；多人游戏需要服务器也安装同一个模组与 Fabric API。服务端入口不加载音乐、界面等客户端类。
+反馈问题时请附上游戏版本、Fabric Loader / Fabric API 版本、复现步骤与相关日志。提交前请移除登录 cookie 等敏感信息。
 
-仅客户端安装且服务器未安装时，仍可使用时钟和音乐，战斗面板显示“血量未同步”。不根据客户端猜测剩余血量。
+## 开源协议与来源标注
 
-## 网易云 API 与 VIP 登录
+本项目原创代码采用 [MIT License](LICENSE)，版权声明为 **tourio114**，项目来源为：
 
-需部署用户指定项目：https://github.com/TH911/NeteaseCloudMusicApi
+https://github.com/tourio114/psychic-enigma
 
-服务端单独运行，并不包含在模组 JAR 内。仓库说明要求 Node.js 18+。例如：
+允许商业使用、修改、分发和销售，也允许用于闭源项目。分发本软件的副本或实质性部分时，必须保留 `LICENSE` 中的版权声明和许可声明；版权声明已包含原项目地址。
 
-```sh
-git clone https://github.com/TH911/NeteaseCloudMusicApi.git
-cd NeteaseCloudMusicApi
-npm install
-node app.js
-```
+建议在衍生项目 README 或“关于”页面注明：
 
-本机部署默认填写 `http://localhost:3000`；远端部署填写自己的 HTTPS 服务地址。这里的 localhost 指运行 Minecraft 的电脑。
+> 基于 tourio114 的 Dynamic Island 项目：https://github.com/tourio114/psychic-enigma（MIT License）。
 
-1. 配置菜单填写 API，点击“保存 API”。
-2. 点击“扫码登录”，用网易云音乐手机 App 扫码并确认。
-3. 显示登录成功后搜索歌曲并点击播放。
-4. 凭证过期时重新扫码。二维码最多等待 150 秒，可点击关闭或 Esc 取消。
+上述示例是推荐的展示方式；MIT 的正式要求以 `LICENSE` 原文为准，不额外强制界面署名。第三方库保留各自许可证，详见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) 和 [licenses/](licenses/)。MIT 不授予网易云音乐内容、Minecraft 素材或其他第三方内容的使用权。
 
-调用路径：`/login/qr/key`、`/login/qr/create`、`/login/qr/check`、`/cloudsearch`、`/song/url/v1`。调用使用 POST 表单；cookie 通过请求正文传至用户指定 API，不追加到 URL。
+## 致谢
 
-登录状态不能突破账号权限。VIP、版权、地区及设备策略仍由网易云决定。只返回试听链接时会提示确认 VIP 权限，不将试听当成完整歌曲。
-
-登录凭证保存在 `config/dynamicisland.session`，与 API 地址绑定；更换 API 不会把旧凭证发给新地址。凭证为本地明文，Unix 下使用仅当前用户可读写的文件权限。不要分享此文件；仅连接自己信任的 API。退出登录会清除本地凭证并停止播放，不代表撤销该账号在其他设备的登录。
-
-普通设置保存在 `config/dynamicisland.json`。模组使用独立音频输出，音量通过模组按钮调整，不跟随 Minecraft 音乐音量。
-
-## 待完成验证
-
-- 已完成：真实 Gradle 编译，修正 26.3 输入、HUD、配置界面和网络注册接口。
-- 进入 26.3 单人世界：检查右 Shift、改键、时间、显示秒数、拖动、缩放与重启后保存。
-- 攻击生物：检查伤害后的数值、连续攻击、治疗、死亡、切换目标、超时和断线清理。
-- 用专用服务器检查双端安装及仅客户端安装两种情况。
-- 自建 API 测试扫码、授权、取消、过期、重启后凭证、退出、错误地址和超时。
-- 分别测试普通歌曲、VIP 账号歌曲、非 VIP 无权限歌曲、试听歌曲和地区受限歌曲。
-- 测试播放、暂停、切歌、停止、自然结束、断网、无音频设备与退出游戏。
-
-## 参考
-
-- Fabric 26.3 更新：https://fabricmc.net/2026/09/15/263.html
-- Fabric HUD：https://docs.fabricmc.net/develop/rendering/hud
-- Fabric 按键：https://docs.fabricmc.net/develop/key-mappings
-- Fabric 界面：https://docs.fabricmc.net/develop/rendering/gui/custom-screens
-- 网易云 API 文档：https://docs-neteasecloudmusicapi.focalors.ltd/
-
-代码许可证 MIT。JLayer 与 ZXing 作为独立依赖嵌入，保留其各自许可证。
+- [Fabric](https://fabricmc.net/)：模组加载器与开发 API。
+- [TH911/NeteaseCloudMusicApi](https://github.com/TH911/NeteaseCloudMusicApi)：网易云音乐服务接口。
+- [JLayer](https://www.javazoom.net/javalayer/javalayer.html)：MP3 解码。
+- [ZXing](https://github.com/zxing/zxing)：登录二维码生成。

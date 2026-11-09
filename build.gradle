@@ -22,3 +22,9 @@ processResources {
     inputs.property 'version', project.version
     filesMatching('fabric.mod.json') { expand version: project.version }
 }
+
+tasks.named('jar') {
+    from('LICENSE')
+    from('THIRD_PARTY_NOTICES.md')
+    from('licenses') { into 'licenses' }
+}
