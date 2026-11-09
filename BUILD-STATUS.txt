@@ -1,0 +1,5 @@
+BUILD SUCCESSFUL
+Java 25 / Gradle 9.6.0 / Loom 1.17.21
+Minecraft 26.3
+Package metadata, entrypoints and nested dependencies verified.
+No automated game tests or manual game testing performed.

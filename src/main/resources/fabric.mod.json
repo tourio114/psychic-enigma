@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "id": "dynamicisland",
+  "version": "${version}",
+  "name": "灵动岛 Dynamic Island",
+  "description": "时钟、战斗生命值和支持网易云扫码登录的音乐灵动岛。",
+  "environment": "*",
+  "entrypoints": {"main": ["dev.island.IslandCommon"], "client": ["dev.island.IslandClient"]},
+  "license": "MIT",
+  "depends": {"fabricloader": ">=0.19.5", "minecraft": "26.3", "java": ">=25", "fabric-api": "*"}
+}
