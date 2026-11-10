@@ -2,7 +2,7 @@ plugins {
     id 'net.fabricmc.fabric-loom' version '1.17.21'
     id 'maven-publish'
 }
-version = '0.2.0'
+version = '0.3.0'
 group = 'dev.island'
 base { archivesName = 'dynamic-island' }
 repositories { mavenCentral() }

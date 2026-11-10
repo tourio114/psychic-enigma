@@ -1,0 +1,1 @@
+{"required":true,"package":"dev.island.mixin","compatibilityLevel":"JAVA_25","client":["GuiGraphicsAccess","GlassCaptureMixin"],"injectors":{"defaultRequire":1}}

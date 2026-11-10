@@ -34,6 +34,13 @@ public final class IslandClient implements ClientModInitializer {
         MUSIC = new MusicService(CONFIG);
         OPEN = KeyMappingHelper.registerKeyMapping(new KeyMapping("key.dynamicisland.config", InputConstants.Type.KEYBOARD,
                 InputConstants.KEY_RSHIFT, KeyMapping.Category.register(Identifier.fromNamespaceAndPath("dynamicisland", "main"))));
+        net.fabricmc.fabric.api.client.screen.v1.ScreenEvents.BEFORE_INIT.register((client, screen, sw, sh) -> {
+            if (screen instanceof net.minecraft.client.gui.screens.TitleScreen) {
+                net.fabricmc.fabric.api.client.screen.v1.ScreenKeyboardEvents.beforeKeyPress(screen).register((s, event) -> {
+                    if (OPEN.matches(event)) client.gui.setScreen(new ConfigScreen());
+                });
+            }
+        });
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             while (OPEN.consumeClick()) if (client.player != null) client.gui.setScreen(new ConfigScreen());
         });
@@ -55,7 +62,11 @@ public final class IslandClient implements ClientModInitializer {
         HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT,
                 Identifier.fromNamespaceAndPath("dynamicisland", "island"), (g, delta) -> draw(g, false));
     }
-    public static void drawPreview(GuiGraphicsExtractor g) { draw(g, true, true); }
+    private static IslandPlacement.Box previewBox = new IslandPlacement.Box(0, 0, 112, 28);
+    public static IslandPlacement.Box previewBounds() { return previewBox; }
+    private static int previewTop = 10;
+    public static void drawPreviewAt(GuiGraphicsExtractor g, int top) { previewTop = top; draw(g, true, true); }
+    public static void drawPreview(GuiGraphicsExtractor g) { drawPreviewAt(g, 10); }
     public static void draw(GuiGraphicsExtractor g, boolean preview) { draw(g, preview, false); }
     private static void draw(GuiGraphicsExtractor g, boolean preview, boolean centered) {
         Minecraft mc = Minecraft.getInstance();
@@ -84,8 +95,10 @@ public final class IslandClient implements ClientModInitializer {
         int sw = g.guiWidth(), sh = g.guiHeight();
         w = Math.min(w, sw);
         double appear = IslandMotion.smooth(motion.appearance);
-        int x = Math.clamp((int) ((centered ? .5 : CONFIG.x) * sw) - w / 2, 0, Math.max(0, sw - w));
-        int y = Math.clamp((int) (centered ? 10 : CONFIG.y * sh) - (int) Math.round((1 - appear) * 7), 0, Math.max(0, sh - h));
+        var placement = IslandPlacement.box(centered ? .5 : CONFIG.x, centered ? previewTop / (double) sh : CONFIG.y, sw, sh, w, h);
+        int x = placement.x();
+        int y = placement.y() - (preview ? 0 : (int) Math.round((1 - appear) * 7));
+        if (preview) previewBox = placement;
         glass(g, x, y, w, h, appear, motion.pulse);
         // Clip sliding text to the interior, keeping it inside the animated capsule.
         g.enableScissor(x + 10, y + 4, x + w - 10, y + h - 5);
@@ -134,6 +147,7 @@ public final class IslandClient implements ClientModInitializer {
             pill(g, x - spread, y - spread + 3, w + spread * 2, h + spread * 2, color(0x000000, .035 * surface));
         pill(g, x, y, w, h, color(0x0C101A, surface));
         if (!CONFIG.glass) return;
+        LiquidGlassRenderer.enqueue(g, x, y, w, h, Math.min(14, h / 2), surface);
         // A translucent glass treatment; no full-screen blur pass or framebuffer readback.
         for (int row = 0; row < h; row++) {
             int inset = inset(row, h);

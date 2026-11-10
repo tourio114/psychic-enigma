@@ -7,41 +7,39 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 /** Live glass preview; slider changes remain in memory until leaving this screen. */
-public final class AppearanceScreen extends Screen {
+public final class AppearanceScreen extends IslandUi.CardScreen {
     private final Screen parent;
     private String error = "";
-    public AppearanceScreen(Screen parent) { super(Component.literal("灵动岛外观")); this.parent = parent; }
+    public AppearanceScreen(Screen parent) { super("外观与动画", "LIQUID GLASS  /  实时预览"); this.parent = parent; }
     @Override protected void init() {
-        int x = width / 2 - 140;
-        addRenderableWidget(new AbstractSliderButton(x, 86, 280, 20, Component.empty(), IslandClient.CONFIG.opacity) {
+        layout();
+        int x = left + 14, full = cardWidth - 28, half = (full - 8) / 2;
+        addRenderableWidget(new IslandUi.Slider(x, top + 100, full, IslandClient.CONFIG.opacity) {
             { updateMessage(); }
             @Override protected void updateMessage() {
                 setMessage(Component.literal("背景不透明度：" + Math.round(value * 100) + "%"));
             }
             @Override protected void applyValue() { IslandClient.CONFIG.opacity = (float) value; }
         });
-        addRenderableWidget(Button.builder(glassLabel(), b -> {
-            IslandClient.CONFIG.glass = !IslandClient.CONFIG.glass; b.setMessage(glassLabel());
-        }).bounds(x, 112, 136, 20).build());
-        addRenderableWidget(Button.builder(animationLabel(), b -> {
-            IslandClient.CONFIG.animations = !IslandClient.CONFIG.animations; b.setMessage(animationLabel());
-        }).bounds(x + 144, 112, 136, 20).build());
-        addRenderableWidget(Button.builder(Component.literal("恢复默认外观"), b -> {
+        action(glassLabel().getString(), x, top + 128, half, false, () -> {
+            IslandClient.CONFIG.glass = !IslandClient.CONFIG.glass; rebuildWidgets();
+        });
+        action(animationLabel().getString(), x + half + 8, top + 128, full - half - 8, false, () -> {
+            IslandClient.CONFIG.animations = !IslandClient.CONFIG.animations; rebuildWidgets();
+        });
+        action("恢复默认", x, top + 158, half, false, () -> {
             IslandClient.CONFIG.opacity = .62f;
-            IslandClient.CONFIG.glass = IslandClient.CONFIG.animations = true;
-            rebuildWidgets();
-        }).bounds(x, 144, 280, 20).build());
-        addRenderableWidget(Button.builder(Component.literal("保存并返回"), b -> onClose())
-                .bounds(x, 176, 280, 20).build());
+            IslandClient.CONFIG.glass = IslandClient.CONFIG.animations = true; rebuildWidgets();
+        });
+        action("保存并返回", x + half + 8, top + 158, full - half - 8, true, this::onClose);
     }
     private Component glassLabel() { return Component.literal("玻璃质感：" + (IslandClient.CONFIG.glass ? "开" : "关")); }
     private Component animationLabel() { return Component.literal("动画：" + (IslandClient.CONFIG.animations ? "开" : "关")); }
     @Override public void extractRenderState(GuiGraphicsExtractor g, int mx, int my, float delta) {
         super.extractRenderState(g, mx, my, delta);
         // Use an explicit preview position, without writing temporary coordinates to config.
-        IslandClient.drawPreview(g);
-        g.centeredText(font, "灵动岛 · 外观预览", width / 2, 49, 0xFFFFFFFF);
-        g.centeredText(font, "半透明渐变、高光与细颗粒；不包含背景模糊", width / 2, 68, 0xFFCED2E2);
+        IslandClient.drawPreviewAt(g, top + 55);
+        if (cardHeight >= 250) label(g, LiquidGlassRenderer.status(), left + 14, top + 206, IslandUi.MUTED);
         if (!error.isEmpty()) g.centeredText(font, error, width / 2, height - 20, 0xFFFF9999);
     }
     @Override public void onClose() {

@@ -31,6 +31,17 @@ public final class IslandMotionCheck {
                 && m.health == .5 && m.pulse == 0, "disabled animations must snap without motion");
         m.enter(); m.step(.1, true, Double.NaN, true);
         check(m.appearance > 0 && m.appearance < 1 && Double.isFinite(m.health), "entry fade and invalid health");
+        for (int[] screen : new int[][]{{320, 240}, {480, 270}, {1920, 1080}}) {
+            var box = IslandPlacement.box(.5, .035, screen[0], screen[1], 112, 28);
+            check(box.contains(box.x() + 10, box.y() + 5), "HUD drag hit area");
+            check(!box.contains(box.x() - 1, box.y()), "outside HUD must not capture drag");
+            var moved = IslandPlacement.box(IslandPlacement.anchorX(57, 112, screen[0]),
+                    IslandPlacement.anchorY(73, screen[1]), screen[0], screen[1], 112, 28);
+            check(moved.x() == 57 && moved.y() == 73, "drag coordinates must round trip at each GUI scale");
+            var edge = IslandPlacement.box(1, 1, screen[0], screen[1], 236, 54);
+            check(edge.x() + edge.width() <= screen[0] && edge.y() + edge.height() <= screen[1], "clamp to visible screen");
+        }
+        System.out.println("Placement checks passed: scaled coordinates, drag hit area, anchor round trip and edge limits.");
         System.out.println("Animation checks passed: FPS independence, bounds, transitions, health, pulse and reduced motion.");
     }
 }

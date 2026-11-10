@@ -9,50 +9,73 @@ import net.minecraft.client.input.MouseButtonEvent;
 import com.google.zxing.common.BitMatrix;
 import java.util.*;
 
-public final class ConfigScreen extends Screen {
+public final class ConfigScreen extends IslandUi.CardScreen {
     private EditBox api, keywords;
     private List<MusicService.Song> results = List.of();
     private final List<Button> songs = new ArrayList<>();
     private boolean musicPage;
-    private int searchGeneration;
+    private int searchGeneration, offset;
+    private String apiDraft = IslandClient.CONFIG.api, keywordDraft = "";
     private String message = "";
-    public ConfigScreen() { super(Component.literal("灵动岛设置")); }
+    public ConfigScreen() { super("灵动岛", "DYNAMIC ISLAND  /  个性化你的游戏 HUD"); }
     private Button button(String text, int x, int y, int w, Runnable action) {
-        return addRenderableWidget(Button.builder(Component.literal(text), b -> action.run()).bounds(x, y, w, 20).build());
+        return action(text, x, y, w, false, action);
+    }
+    private void switchPage(boolean music) {
+        if (api != null) apiDraft = api.getValue();
+        if (keywords != null) keywordDraft = keywords.getValue();
+        musicPage = music; rebuildWidgets();
     }
     @Override protected void init() {
-        int x = width / 2 - 150;
-        button(musicPage ? "返回设置" : "音乐播放器", x, 32, 100, () -> {
-            musicPage = !musicPage; rebuildWidgets();
-        });
-        button("完成", x + 220, 32, 80, this::onClose);
+        layout();
+        int x = left + 14, y = top, full = cardWidth - 28, half = (full - 8) / 2;
+        action("关闭", left + cardWidth - 66, y + 10, 52, false, this::onClose);
+        action("常规设置", x, y + 46, half, !musicPage, () -> switchPage(false));
+        action("音乐与账号", x + half + 8, y + 46, full - half - 8, musicPage, () -> switchPage(true));
+        songs.clear();
         if (!musicPage) {
-            api = addRenderableWidget(new EditBox(font, x, 74, 300, 20, Component.literal("API 地址")));
-            api.setMaxLength(512); api.setValue(IslandClient.CONFIG.api);
-            button("保存 API", x, 100, 96, this::saveApi);
-            button("扫码登录", x + 102, 100, 96, () -> { if (saveApi()) IslandClient.MUSIC.login(); });
-            button("退出登录", x + 204, 100, 96, () -> IslandClient.MUSIC.logout());
-            button("时间显示秒数", x, 128, 96, () -> { IslandClient.CONFIG.seconds = !IslandClient.CONFIG.seconds; saveConfig(); });
-            button("拖动设置位置", x + 102, 128, 96, () -> minecraft.gui.setScreen(new PositionScreen(this)));
-            button("修改快捷键", x + 204, 128, 96, () -> minecraft.gui.setScreen(new KeyBindsScreen(this, minecraft.options)));
-            button("音量 −", x, 156, 96, () -> volume(-.1f));
-            button("音量 +", x + 102, 156, 96, () -> volume(.1f));
-            button("外观 / 动画", x + 204, 156, 96, () -> minecraft.gui.setScreen(new AppearanceScreen(this)));
+            action("外观与动画", x, y + 82, half, true, () -> minecraft.gui.setScreen(new AppearanceScreen(this)));
+            action("位置与布局", x + half + 8, y + 82, full - half - 8, false, () -> minecraft.gui.setScreen(new PositionScreen(this)));
+            action("显示秒数：" + (IslandClient.CONFIG.seconds ? "开" : "关"), x, y + 112, half, false, () -> {
+                IslandClient.CONFIG.seconds = !IslandClient.CONFIG.seconds; saveConfig(); rebuildWidgets();
+            });
+            action("快捷键设置", x + half + 8, y + 112, full - half - 8, false,
+                    () -> minecraft.gui.setScreen(new KeyBindsScreen(this, minecraft.options)));
+            addRenderableWidget(new IslandUi.Slider(x, y + 148, full, IslandClient.CONFIG.volume) {
+                { updateMessage(); }
+                protected void updateMessage() { setMessage(Component.literal("音乐音量：" + Math.round(value * 100) + "%")); }
+                protected void applyValue() {
+                    IslandClient.CONFIG.volume = (float) value; IslandClient.MUSIC.audio.volume = (float) value;
+                }
+            });
             return;
         }
-        keywords = addRenderableWidget(new EditBox(font, x, 62, 222, 20, Component.literal("搜索歌曲")));
-        keywords.setMaxLength(100);
-        button("搜索", x + 228, 62, 72, this::search);
-        songs.clear();
-        for (int i = 0; i < 5; i++) {
+        api = addRenderableWidget(new EditBox(font, x, y + 74, full, 20, Component.literal("API 地址")));
+        api.setMaxLength(512); api.setValue(apiDraft); api.setHint(Component.literal("填写网易云 API 地址"));
+        int third = (full - 12) / 3;
+        button("保存接口", x, y + 100, third, this::saveApi);
+        action("扫码登录", x + third + 6, y + 100, third, true, () -> { if (saveApi()) IslandClient.MUSIC.login(); });
+        button("退出账号", x + (third + 6) * 2, y + 100, full - (third + 6) * 2, () -> IslandClient.MUSIC.logout());
+        keywords = addRenderableWidget(new EditBox(font, x, y + 126, full - 58, 20, Component.literal("搜索歌曲")));
+        keywords.setMaxLength(100); keywords.setValue(keywordDraft); keywords.setHint(Component.literal("搜索歌曲或歌手"));
+        action("搜索", x + full - 52, y + 126, 52, true, this::search);
+        int count = Math.clamp((cardHeight - 192) / 22, 1, 5);
+        for (int i = 0; i < count; i++) {
             final int index = i;
-            songs.add(button("", x, 86 + 21 * i, 300, () -> {
-                if (index < results.size()) IslandClient.MUSIC.play(results.get(index));
+            songs.add(button("", x, y + 152 + 22 * i, full, () -> {
+                int n = offset + index;
+                if (n < results.size()) IslandClient.MUSIC.play(results.get(n));
             }));
         }
         updateResults();
-        button("暂停 / 继续", x, 194, 145, () -> IslandClient.MUSIC.audio.togglePause());
-        button("停止", x + 155, 194, 145, () -> IslandClient.MUSIC.stop());
+        int bottom = y + 156 + count * 22;
+        int playWidth = (full - 100) / 2;
+        button("暂停 / 继续", x, bottom, playWidth, () -> IslandClient.MUSIC.audio.togglePause());
+        button("停止", x + playWidth + 6, bottom, playWidth, () -> IslandClient.MUSIC.stop());
+        button("上一页", x + full - 88, bottom, 42, () -> { offset = Math.max(0, offset - count); updateResults(); });
+        button("下一页", x + full - 42, bottom, 42, () -> {
+            if (offset + count < results.size()) offset += count; updateResults();
+        });
     }
     private void saveConfig() {
         try { IslandClient.CONFIG.save(); message = "设置已保存"; }
@@ -66,7 +89,7 @@ public final class ConfigScreen extends Screen {
                     || u.getUserInfo() != null || u.getQuery() != null || u.getFragment() != null) throw new IllegalArgumentException();
             if (!next.equals(IslandClient.CONFIG.api)) {
                 IslandClient.MUSIC.cancelLogin(); IslandClient.MUSIC.stop();
-                IslandClient.CONFIG.api = next;
+                IslandClient.CONFIG.api = next; apiDraft = next;
                 message = "API 已更改，原地址的凭证不会发送至新地址";
             }
             saveConfig(); return true;
@@ -83,24 +106,26 @@ public final class ConfigScreen extends Screen {
             IslandClient.MUSIC.search(keywords.getValue().strip()).whenComplete((items, error) -> minecraft.execute(() -> {
                 if (version != searchGeneration || !musicPage) return;
                 if (error != null) { message = MusicService.safe(error); return; }
-                results = items; message = items.isEmpty() ? "未找到歌曲" : "点击歌曲播放"; updateResults();
+                results = items; offset = 0; message = items.isEmpty() ? "未找到歌曲" : "点击歌曲播放"; updateResults();
             }));
         } catch (Exception e) { message = MusicService.safe(e); }
     }
     private void updateResults() {
         for (int i = 0; i < songs.size(); i++) {
-            Button b = songs.get(i); b.visible = i < results.size();
-            if (b.visible) b.setMessage(Component.literal(font.plainSubstrByWidth(results.get(i).name() + " · " + results.get(i).artist(), 280)));
+            Button b = songs.get(i); b.visible = offset + i < results.size();
+            if (b.visible) b.setMessage(Component.literal(font.plainSubstrByWidth(results.get(offset + i).name() + " · " + results.get(offset + i).artist(), cardWidth - 48)));
         }
     }
     @Override public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float delta) {
+        caption = musicPage && !message.isEmpty() ? message : "DYNAMIC ISLAND  /  个性化你的游戏 HUD";
         super.extractRenderState(g, mouseX, mouseY, delta);
-        int x = width / 2 - 150;
-        g.text(font, "灵动岛 · 设置与网易云音乐", x, 18, 0xFFFFFFFF, false);
-        if (!musicPage) g.text(font, "API 地址（需先部署服务）", x, 61, 0xFFBDBDC8, false);
-        g.text(font, font.plainSubstrByWidth(message, width - 20), 10, height - 23, 0xFFB8D6FF, false);
+        if (!musicPage && cardHeight >= 270) {
+            label(g, "外观与位置实时预览，设置会在退出时保存。", left + 14, top + 192, IslandUi.MUTED);
+            label(g, LiquidGlassRenderer.status(), left + 14, top + 210, IslandUi.ACCENT);
+        }
+        if (!musicPage) label(g, message, left + 14, top + cardHeight - 25, IslandUi.ACCENT);
         String state = IslandClient.MUSIC.audio.error.isEmpty() ? IslandClient.MUSIC.status : IslandClient.MUSIC.audio.error;
-        g.text(font, font.plainSubstrByWidth(state, width - 20), 10, height - 11, 0xFFBDBDC8, false);
+        label(g, state, left + 14, top + cardHeight - 13, IslandUi.MUTED);
         BitMatrix qr = IslandClient.MUSIC.qr;
         if (qr != null) {
             // Modal login overlay. Click to dismiss; closing this screen cancels polling too.
@@ -122,39 +147,4 @@ public final class ConfigScreen extends Screen {
     @Override public void removed() { ++searchGeneration; IslandClient.MUSIC.cancelLogin(); }
     @Override public boolean isPauseScreen() { return false; }
 
-    private static final class PositionScreen extends Screen {
-        private final ConfigScreen parent;
-        private boolean dragging;
-        PositionScreen(ConfigScreen parent) { super(Component.literal("拖动灵动岛")); this.parent = parent; }
-        @Override protected void init() {
-            addRenderableWidget(Button.builder(Component.literal("恢复顶部居中"), b -> {
-                IslandClient.CONFIG.x = .5; IslandClient.CONFIG.y = .035;
-            }).bounds(width / 2 - 110, height - 35, 130, 20).build());
-            addRenderableWidget(Button.builder(Component.literal("完成"), b -> onClose()).bounds(width / 2 + 30, height - 35, 80, 20).build());
-        }
-        private void position(double x, double y) {
-            IslandClient.CONFIG.x = Math.clamp(x / width, 0, 1);
-            IslandClient.CONFIG.y = Math.clamp((y - 14) / height, 0, 1);
-        }
-        @Override public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
-            if (super.mouseClicked(event, doubleClick)) return true;
-            if (event.button() == 0) { dragging = true; position(event.x(), event.y()); return true; }
-            return false;
-        }
-        @Override public boolean mouseDragged(MouseButtonEvent event, double dx, double dy) {
-            if (dragging) { position(event.x(), event.y()); return true; }
-            return super.mouseDragged(event, dx, dy);
-        }
-        @Override public boolean mouseReleased(MouseButtonEvent event) { dragging = false; return super.mouseReleased(event); }
-        @Override public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float delta) {
-            super.extractRenderState(g, mouseX, mouseY, delta);
-            IslandClient.draw(g, true);
-            g.text(font, "按住左键拖动，Esc 保存并返回", 10, height - 55, 0xFFFFFFFF, false);
-        }
-        @Override public void onClose() {
-            try { IslandClient.CONFIG.save(); } catch (Exception ignored) {}
-            minecraft.gui.setScreen(parent);
-        }
-        @Override public boolean isPauseScreen() { return false; }
-    }
 }
