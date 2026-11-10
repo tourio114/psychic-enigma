@@ -45,7 +45,7 @@ def main():
         archive.unlink()
         if os.name != 'nt': gradle.chmod(0o755)
     subprocess.run([str(gradle), '--no-daemon', 'build', '--stacktrace', *sys.argv[1:]], cwd=ROOT, check=True)
-    print('Build complete: build/libs/dynamic-island-0.1.0.jar')
+    print('Build complete: build/libs/dynamic-island-0.2.0.jar')
 
 if __name__ == '__main__':
     try: main()

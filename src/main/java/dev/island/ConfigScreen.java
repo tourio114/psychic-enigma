@@ -37,6 +37,7 @@ public final class ConfigScreen extends Screen {
             button("修改快捷键", x + 204, 128, 96, () -> minecraft.gui.setScreen(new KeyBindsScreen(this, minecraft.options)));
             button("音量 −", x, 156, 96, () -> volume(-.1f));
             button("音量 +", x + 102, 156, 96, () -> volume(.1f));
+            button("外观 / 动画", x + 204, 156, 96, () -> minecraft.gui.setScreen(new AppearanceScreen(this)));
             return;
         }
         keywords = addRenderableWidget(new EditBox(font, x, 62, 222, 20, Component.literal("搜索歌曲")));

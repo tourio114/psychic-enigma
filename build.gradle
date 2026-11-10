@@ -2,7 +2,7 @@ plugins {
     id 'net.fabricmc.fabric-loom' version '1.17.21'
     id 'maven-publish'
 }
-version = '0.1.0'
+version = '0.2.0'
 group = 'dev.island'
 base { archivesName = 'dynamic-island' }
 repositories { mavenCentral() }
@@ -28,3 +28,17 @@ tasks.named('jar') {
     from('THIRD_PARTY_NOTICES.md')
     from('licenses') { into 'licenses' }
 }
+
+sourceSets {
+    animationCheck {
+        java.srcDir 'src/animationCheck/java'
+        compileClasspath += sourceSets.main.output
+        runtimeClasspath += sourceSets.main.output
+    }
+}
+tasks.register('verifyAnimation', JavaExec) {
+    dependsOn animationCheckClasses
+    classpath = sourceSets.animationCheck.runtimeClasspath
+    mainClass = 'dev.island.IslandMotionCheck'
+}
+tasks.named('check') { dependsOn 'verifyAnimation' }
