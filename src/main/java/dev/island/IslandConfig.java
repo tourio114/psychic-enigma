@@ -10,6 +10,9 @@ public final class IslandConfig {
     private static final Path FILE = FabricLoader.getInstance().getConfigDir().resolve("dynamicisland.json");
     public double x = 0.5, y = 0.035;
     public boolean seconds = false;
+    public float attackDisplaySeconds = 5;
+    public boolean tabInfo = true;
+    public boolean showServerAddress = false;
     public float opacity = 0.62f;
     public boolean glass = true;
     public boolean animations = true;
@@ -24,6 +27,7 @@ public final class IslandConfig {
                     c.x = finite(c.x, .5); c.y = finite(c.y, .035);
                     c.volume = (float) finite(c.volume, .65);
                     c.opacity = (float) finite(c.opacity, .62);
+                    c.attackDisplaySeconds = InfoRules.duration(c.attackDisplaySeconds);
                     if (c.api == null) c.api = "http://localhost:3000";
                     return c;
                 }

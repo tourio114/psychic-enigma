@@ -18,12 +18,7 @@ public final class IslandUi {
         }
     }
     public static void round(GuiGraphicsExtractor g, int x, int y, int w, int h, int r, int color) {
-        r = Math.min(r, Math.min(w, h) / 2);
-        for (int row = 0; row < h; row++) {
-            double dy = row < r ? r - row - .5 : row >= h - r ? row - (h - r) + .5 : 0;
-            int inset = dy == 0 ? 0 : (int) Math.ceil(r - Math.sqrt(Math.max(0, r * r - dy * dy)));
-            g.fill(x + inset, y + row, x + w - inset, y + row + 1, color);
-        }
+        SmoothShape.fill(g, x, y, w, h, r, color);
     }
     public static final class Action extends Button {
         private final boolean accent;
@@ -34,7 +29,7 @@ public final class IslandUi {
             boolean hover = isHoveredOrFocused();
             int bg = !active ? 0x202A344B : accent ? hover ? 0xE04E6B9D : 0xB037507C : hover ? 0xA044516B : 0x70303B51;
             round(g, getX(), getY(), width, height, 6, bg);
-            if (isFocused()) g.outline(getX(), getY(), width, height, 0xFFADC7FF);
+            if (isFocused()) SmoothShape.stroke(g, getX(), getY(), width, height, 6, 0xFFADC7FF);
             var font = Minecraft.getInstance().font;
             String text = font.plainSubstrByWidth(getMessage().getString(), Math.max(1, width - 10));
             g.text(font, text, getX() + (width - font.width(text)) / 2, getY() + 6, active ? TEXT : MUTED, false);
@@ -73,7 +68,7 @@ public final class IslandUi {
             round(g, left - 2, top + 4, cardWidth + 4, cardHeight, 16, 0x50000000);
             round(g, left, top, cardWidth, cardHeight, 14, 0xDE111827);
             if (IslandClient.CONFIG.glass) LiquidGlassRenderer.enqueue(g, left, top, cardWidth, cardHeight, 14, .75);
-            g.fill(left + 18, top + 1, left + cardWidth - 18, top + 2, 0x607E9ACB);
+            SmoothShape.stroke(g, left, top, cardWidth, cardHeight, 14, 0x607E9ACB);
             label(g, title.getString(), left + 14, top + 12, TEXT);
             label(g, caption, left + 14, top + 28, MUTED);
         }

@@ -1,8 +1,8 @@
-v0.3.0 CLEAN BUILD SUCCESSFUL
+v0.4.0 BUILD SUCCESSFUL
 Java 25 / Gradle 9.6.0 / Loom 1.17.21 / Minecraft 26.3
-Animation and scaled placement checks passed.
-GLSL 330 compiled and rendered on Mesa OpenGL EGL: coverage, alpha, bounded area, blur verified.
-Test client (software Vulkan): title-screen config, GUI, SDL left-button drag, keyboard nudge, persistence after restart verified.
-Shader pipeline did not report errors in test client.
-JAR metadata, mixins, shader resources and upstream MIT license verified.
-Music login/playback, combat and other hardware/resource-pack combinations remain untested.
+Animation, scaled placement, combat duration bounds/nanosecond precision and ping formatting checks passed.
+OpenGL EGL shader checks: glass coverage/blur/alpha, analytic solid and stroke AA at 1x/2x/3x passed.
+Software Vulkan singleplayer client: settings save and reload, 2-second target expiry, real 8/10 HP, numeric Tab ping, player count, MSPT and target TPS verified.
+Tab held: HUD clock hidden to prevent overlap.
+JAR metadata, client mixins, shader resources and licenses verified.
+Dedicated servers, other hardware, third-party Tab mods and music login/playback remain untested.

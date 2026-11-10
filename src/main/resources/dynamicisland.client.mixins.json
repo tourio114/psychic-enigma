@@ -1,1 +1,14 @@
-{"required":true,"package":"dev.island.mixin","compatibilityLevel":"JAVA_25","client":["GuiGraphicsAccess","GlassCaptureMixin"],"injectors":{"defaultRequire":1}}
+{
+  "required": true,
+  "package": "dev.island.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "client": [
+    "GuiGraphicsAccess",
+    "GlassCaptureMixin",
+    "PlayerTabMixin",
+    "SingleplayerTabMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

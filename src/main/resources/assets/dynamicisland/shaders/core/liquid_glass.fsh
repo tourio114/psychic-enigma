@@ -18,7 +18,8 @@ void main() {
     float radius = clamp(material.r * min(size.x, size.y), 1.0, min(size.x, size.y) * 0.5);
     vec2 q = abs(p) - size * 0.5 + radius;
     float d = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - radius;
-    float coverage = 1.0 - smoothstep(-0.8, 0.8, d);
+    float aa = max(fwidth(d), 1.0);
+    float coverage = 1.0 - smoothstep(-aa, aa, d);
     if (coverage <= 0.0) discard;
     float dist = clamp(-d / max(radius, 1.0), 0.0, 1.0);
     float fresnel = pow(1.0 - dist, 3.0);
@@ -37,9 +38,6 @@ void main() {
     color.r = mix(color.r, sampleScene(sampleUV + chromaOffset).r, 0.4);
     color.b = mix(color.b, sampleScene(sampleUV - chromaOffset).b, 0.4);
     // Upstream low-frequency diffusion, adaptive tint, saturation and Fresnel material shaping.
-    float micro = sin(gl_FragCoord.x * 0.015 + gl_FragCoord.y * 0.008)
-                * sin(gl_FragCoord.y * 0.012 - gl_FragCoord.x * 0.006);
-    color += micro * 0.002;
     float luma = dot(color, vec3(0.299, 0.587, 0.114));
     color = mix(vec3(luma), color, mix(0.45, 0.75, luma));
     vec3 tint = vec3(0.075, 0.095, 0.15);

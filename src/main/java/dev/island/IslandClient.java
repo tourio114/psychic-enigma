@@ -48,7 +48,7 @@ public final class IslandClient implements ClientModInitializer {
             if (player == Minecraft.getInstance().player && !player.isSpectator() && entity instanceof LivingEntity living) {
                 if (target != living) health = Float.NaN;
                 HUD.motion.hit();
-                target = living; maxHealth = living.getMaxHealth(); until = System.nanoTime() + 5_000_000_000L;
+                target = living; maxHealth = living.getMaxHealth(); until = System.nanoTime() + InfoRules.nanos(CONFIG.attackDisplaySeconds);
             }
             return InteractionResult.PASS;
         });
@@ -57,10 +57,16 @@ public final class IslandClient implements ClientModInitializer {
                 health = payload.health(); maxHealth = payload.maxHealth();
             }
         }));
-        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> { target = null; health = Float.NaN; });
+        ClientPlayNetworking.registerGlobalReceiver(ServerInfoPayload.TYPE, (payload, context) -> context.client().execute(() -> ServerTabInfo.update(payload)));
+        ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> syncDuration());
+        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> { target = null; health = Float.NaN; ServerTabInfo.clear(); });
         ClientLifecycleEvents.CLIENT_STOPPING.register(client -> MUSIC.close());
         HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT,
                 Identifier.fromNamespaceAndPath("dynamicisland", "island"), (g, delta) -> draw(g, false));
+    }
+    public static void syncDuration() {
+        if (Minecraft.getInstance().getConnection() != null && ClientPlayNetworking.canSend(DurationPayload.TYPE))
+            ClientPlayNetworking.send(new DurationPayload(CONFIG.attackDisplaySeconds));
     }
     private static IslandPlacement.Box previewBox = new IslandPlacement.Box(0, 0, 112, 28);
     public static IslandPlacement.Box previewBounds() { return previewBox; }
@@ -70,7 +76,8 @@ public final class IslandClient implements ClientModInitializer {
     public static void draw(GuiGraphicsExtractor g, boolean preview) { draw(g, preview, false); }
     private static void draw(GuiGraphicsExtractor g, boolean preview, boolean centered) {
         Minecraft mc = Minecraft.getInstance();
-        if (!preview && (mc.player == null || mc.gui.hud.isHidden())) return;
+        if (!preview && (mc.player == null || mc.gui.hud.isHidden()
+                || (CONFIG.tabInfo && mc.options.keyPlayerList.isDown()))) return;
         boolean combat = !preview && target != null && System.nanoTime() < until;
         boolean music = MUSIC.audio.playing;
         String time = LocalTime.now().format(DateTimeFormatter.ofPattern(CONFIG.seconds ? "HH:mm:ss" : "HH:mm"));
@@ -148,34 +155,9 @@ public final class IslandClient implements ClientModInitializer {
         pill(g, x, y, w, h, color(0x0C101A, surface));
         if (!CONFIG.glass) return;
         LiquidGlassRenderer.enqueue(g, x, y, w, h, Math.min(14, h / 2), surface);
-        // A translucent glass treatment; no full-screen blur pass or framebuffer readback.
-        for (int row = 0; row < h; row++) {
-            int inset = inset(row, h);
-            double highlight = .15 * Math.pow(1 - row / (double) h, 3) + .015;
-            g.fill(x + inset, y + row, x + w - inset, y + row + 1, color(0xD3E0FF, highlight * surface));
-            if (w > 2 * inset + 2) {
-                g.fill(x + inset, y + row, x + inset + 1, y + row + 1, color(0xE8EEFF, (.18 + .22 * pulse) * surface));
-                g.fill(x + w - inset - 1, y + row, x + w - inset, y + row + 1, color(0xCBD9FF, (.10 + .15 * pulse) * surface));
-            }
-            // Stable grain avoids flicker while the camera moves; sparsely spaced for a low draw cost.
-            for (int col = inset + 3; col < w - inset - 3; col += 7) {
-                int hash = (col * 73 + row * 151) & 255;
-                if (hash < 44) g.fill(x + col, y + row, x + col + 1, y + row + 1,
-                        color(0xFFFFFF, .045 * surface));
-            }
-        }
-        g.fill(x + 14, y, x + w - 14, y + 1, color(0xF2F5FF, (.32 + .3 * pulse) * surface));
-        g.fill(x + 14, y + h - 1, x + w - 14, y + h, color(0xAEBBDA, .12 * surface));
-    }
-    private static int inset(int row, int h) {
-        int r = Math.min(14, h / 2);
-        double dy = row < r ? r - row - .5 : row >= h - r ? row - (h - r) + .5 : 0;
-        return dy == 0 ? 0 : (int) Math.ceil(r - Math.sqrt(Math.max(0, r * r - dy * dy)));
+        if (pulse > .01) SmoothShape.stroke(g, x, y, w, h, Math.min(14, h / 2), color(0xDEF1FF, .45 * pulse * surface));
     }
     private static void pill(GuiGraphicsExtractor g, int x, int y, int w, int h, int color) {
-        for (int row = 0; row < h; row++) {
-            int inset = inset(row, h);
-            g.fill(x + inset, y + row, x + w - inset, y + row + 1, color);
-        }
+        SmoothShape.fill(g, x, y, w, h, Math.min(14, h / 2), color);
     }
 }

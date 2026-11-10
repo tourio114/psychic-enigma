@@ -48,6 +48,7 @@ public final class ConfigScreen extends IslandUi.CardScreen {
                     IslandClient.CONFIG.volume = (float) value; IslandClient.MUSIC.audio.volume = (float) value;
                 }
             });
+            action("战斗时长与 Tab 信息", x, y + 178, full, false, () -> minecraft.gui.setScreen(new InfoSettingsScreen(this)));
             return;
         }
         api = addRenderableWidget(new EditBox(font, x, y + 74, full, 20, Component.literal("API 地址")));
@@ -117,13 +118,12 @@ public final class ConfigScreen extends IslandUi.CardScreen {
         }
     }
     @Override public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float delta) {
-        caption = musicPage && !message.isEmpty() ? message : "DYNAMIC ISLAND  /  个性化你的游戏 HUD";
+        caption = !message.isEmpty() ? message : "DYNAMIC ISLAND  /  个性化你的游戏 HUD";
         super.extractRenderState(g, mouseX, mouseY, delta);
         if (!musicPage && cardHeight >= 270) {
-            label(g, "外观与位置实时预览，设置会在退出时保存。", left + 14, top + 192, IslandUi.MUTED);
-            label(g, LiquidGlassRenderer.status(), left + 14, top + 210, IslandUi.ACCENT);
+            label(g, "外观与位置实时预览，设置会在退出时保存。", left + 14, top + 214, IslandUi.MUTED);
+            label(g, LiquidGlassRenderer.status(), left + 14, top + 232, IslandUi.ACCENT);
         }
-        if (!musicPage) label(g, message, left + 14, top + cardHeight - 25, IslandUi.ACCENT);
         String state = IslandClient.MUSIC.audio.error.isEmpty() ? IslandClient.MUSIC.status : IslandClient.MUSIC.audio.error;
         label(g, state, left + 14, top + cardHeight - 13, IslandUi.MUTED);
         BitMatrix qr = IslandClient.MUSIC.qr;

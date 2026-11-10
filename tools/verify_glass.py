@@ -41,3 +41,27 @@ img.transpose(Image.Transpose.FLIP_TOP_BOTTOM).save(output)
 print('GLSL 330 vertex + fragment shaders compiled and rendered on',c.info['GL_RENDERER'])
 print('PASS: corner coverage, untouched outside area, 62% and 0% alpha, blur contrast reduction')
 print('Preview:',output)
+
+# Analytic solid surfaces: check coverage at multiple physical pixel scales and a one-pixel rim.
+shape_vert=(root/'src/main/resources/assets/dynamicisland/shaders/core/rounded_rect.vsh').read_text()
+shape_frag=(root/'src/main/resources/assets/dynamicisland/shaders/core/rounded_rect.fsh').read_text()
+shape=c.program(vertex_shader=shape_vert,fragment_shader=shape_frag)
+shape['DynamicTransforms'].binding=0; shape['Projection'].binding=1
+for scale in (1,2,3):
+ for style in (.5,-.5):
+  ww,hh=160*scale,80*scale; out=c.texture((ww,hh),4); fbo=c.framebuffer([out]); fbo.use(); fbo.clear(); c.viewport=(0,0,ww,hh)
+  coords=[]
+  for x,y,u,v in [(20,20,0,0),(20,48,0,1),(132,20,1,0),(132,48,1,1)]:
+   coords.extend([x/160*2-1,y/80*2-1,style,u,v,.2,.4,.6,.62])
+  buffer=c.buffer(struct.pack(f'{len(coords)}f',*coords))
+  vao=c.vertex_array(shape,[(buffer,'3f 2f 4f','Position','UV0','Color')]); vao.render(moderngl.TRIANGLE_STRIP)
+  result=Image.frombytes('RGBA',(ww,hh),fbo.read(components=4)); alpha=result.getchannel('A')
+  assert result.getpixel((20*scale,20*scale))[3]==0, 'rounded corner must be transparent'
+  if style>0:
+   assert 155<=result.getpixel((76*scale,34*scale))[3]<=160, 'solid center opacity'
+   assert len({a for a in alpha.tobytes() if 0<a<155})>10, 'edge must contain physical-pixel antialias coverage'
+  else:
+   assert result.getpixel((76*scale,34*scale))[3]==0, 'stroke must leave center transparent'
+  vao.release();buffer.release();fbo.release();out.release()
+shape.release()
+print('PASS: analytic solid and stroke shaders, smooth rounded coverage at 1x/2x/3x scales')

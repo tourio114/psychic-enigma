@@ -41,6 +41,13 @@ public final class IslandMotionCheck {
             var edge = IslandPlacement.box(1, 1, screen[0], screen[1], 236, 54);
             check(edge.x() + edge.width() <= screen[0] && edge.y() + edge.height() <= screen[1], "clamp to visible screen");
         }
+        check(InfoRules.duration(Float.NaN) == 5 && InfoRules.duration(Float.POSITIVE_INFINITY) == 5,
+                "invalid combat durations must use a safe default");
+        check(InfoRules.duration(-10) == 1 && InfoRules.duration(100) == 30, "duration bounds");
+        check(InfoRules.nanos(30) == 30_000_000_000L && InfoRules.nanos(1) == 1_000_000_000L, "duration units must not overflow");
+        check(InfoRules.latency(-1).equals("--") && InfoRules.latency(42).equals("42 ms")
+                && InfoRules.latency(99999).equals("9999+ ms"), "latency formatting");
+        System.out.println("Info checks passed: duration defaults, bounds, nanosecond timing and latency formatting.");
         System.out.println("Placement checks passed: scaled coordinates, drag hit area, anchor round trip and edge limits.");
         System.out.println("Animation checks passed: FPS independence, bounds, transitions, health, pulse and reduced motion.");
     }
